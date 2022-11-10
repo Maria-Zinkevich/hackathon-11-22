@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import CanvasDraw from "react-canvas-draw";
+import { ReactSketchCanvas } from 'react-sketch-canvas';
 
 
 const MAX_BRUSH_SIZE = 20;
@@ -10,17 +11,21 @@ const BRUSH_SIZE_STEP = 2;
 export const Workspace = props => {
     const canvasRef = useRef();
     const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
-    const [mode, setMode] = useState('drawing');
+    const [eraseMode, setEraseMode] = useState(false);
 
     return (
         <>
             <div>
-                MODE: ${mode}
+                MODE: {eraseMode ? 'ERASING' : 'DRAWING'}
             </div>
             <button
-                onClick={() => setMode(mode === 'drawing' ? 'erasing' : 'drawing')}
+                onClick={() => {
+                        canvasRef.current.eraseMode(!eraseMode);
+                        setEraseMode(!eraseMode);
+                    }
+                }
             >
-                {mode === 'drawing' ? 'erasing' : 'drawing'}
+                {eraseMode ? 'DRAW' : 'ERASE'}
             </button>
             <button
             // TODO: functionality to do undo by CTRL + Z keydown
@@ -38,14 +43,23 @@ export const Workspace = props => {
             >
                 BRUSH SIZE -
             </button>
-            <CanvasDraw
+            {/* <CanvasDraw
                 ref={canvasRef}
                 erase={true}
                 lazyRadius={0}
                 canvasWidth={600}
                 canvasHeight={600}
                 brushRadius={brushSize}
-            /> 
+            /> */}
+            <ReactSketchCanvas
+                // style={styles}
+                ref={canvasRef}
+                width={600}
+                height={600}
+                strokeWidth={brushSize}
+                eraserWidth={brushSize}
+                strokeColor="#000"
+            />
         </>
     );
 };
