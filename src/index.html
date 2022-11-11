@@ -1,0 +1,155 @@
+<html>
+    <script type="text/javascript">
+    var canvas, ctx, flag = false,
+        prevX = 0,
+        currX = 0,
+        prevY = 0,
+        currY = 0,
+        dot_flag = false;
+
+    var stroke_color = "black",
+        stroke_size = 10;
+    
+    function init() {
+        var url = 'https://portalvhdskzpngkvpz6x48.blob.core.windows.net/tangiblee-static-dev/shared/temp-images/item00001.png';
+        var img = new Image();
+        
+        canvas = document.getElementById('can');
+        ctx = canvas.getContext("2d");
+        
+        img.crossOrigin="anonymous";
+        img.onload = function () {
+            var width = Math.min(500, img.width);
+            var height = img.height * (width / img.width);
+            canvas.width = width;
+            canvas.height = height;
+            mirror_filter.style.width = width;
+            mirror_filter.style.height = height;
+            mirror_original.style.width = width;
+            mirror_original.style.height = height;
+            
+            ctx.drawImage(img, 0, 0, width, height);
+        };
+        img.src = url;
+        
+        canvas.addEventListener("mousemove", function (e) {
+            findxy('move', e)
+        }, false);
+        canvas.addEventListener("mousedown", function (e) {
+            findxy('down', e)
+        }, false);
+        canvas.addEventListener("mouseup", function (e) {
+            findxy('up', e)
+        }, false);
+        canvas.addEventListener("mouseout", function (e) {
+            findxy('out', e)
+        }, false);
+    }
+    
+    function color(obj) {
+        stroke_color = obj.id
+    }
+
+    function size (obj) {
+        if (obj.id === 'increase') stroke_size += 1
+        if (obj.id === 'decrease') stroke_size -= 1
+        document.querySelector('#size').innerText = stroke_size;
+    }
+
+    function mirror() {
+        var dataURL = can.toDataURL();
+        mirror_filter.style.background = `url(${dataURL})`
+    }
+    
+    function draw() {
+            ctx.fillStyle = stroke_color;
+            ctx.strokeStyle = stroke_color;
+            ctx.beginPath();
+            ctx.moveTo(prevX, prevY);
+            ctx.lineTo(currX, currY);
+            ctx.lineWidth = stroke_size * 2;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.fill();
+            mirror();
+
+        // ctx.globalCompositeOperation = 'destination-out';
+        // ctx.beginPath();
+        // ctx.arc(currX, currY, stroke_size, 0, 2 * Math.PI);
+        // ctx.fill();
+
+        // ctx.lineWidth = 10;
+        // ctx.beginPath();
+        // ctx.moveTo(prevX, prevY);
+        // ctx.lineTo(currX, currY);
+        // ctx.stroke();
+
+        // ctx.beginPath();
+        // ctx.moveTo(prevX, prevY);
+        // ctx.lineTo(currX, currY);
+        // ctx.strokeStyle = x;
+        // ctx.lineWidth = y;
+        // ctx.stroke();
+        // ctx.closePath();
+    }
+    
+    function findxy(res, e) {
+        if (res == 'down') {
+            prevX = currX;
+            prevY = currY;
+            currX = e.offsetX;
+            currY = e.offsetY;
+    
+            flag = true;
+            dot_flag = true;
+            if (dot_flag) {
+                ctx.beginPath();
+                ctx.arc(currX, currY, stroke_size, 0, 2 * Math.PI);
+                ctx.fill();
+                mirror();
+                dot_flag = false;
+            }
+        }
+        if (res == 'up' || res == "out") {
+            flag = false;
+        }
+        if (res == 'move') {
+            if (flag) {
+                prevX = currX;
+                prevY = currY;
+                currX = e.offsetX;
+                currY = e.offsetY;
+                draw();
+            }
+        }
+    }
+
+    function send () {
+        var dataURL = can.toDataURL();
+        console.log(dataURL)
+    }
+    </script>
+    <body onload="init()">
+        <div style="display: flex; align-items: center">
+            <div>Choose Color:</div>
+            <div id="black" style="width: 10px; height: 10px; background-color: black; margin: 10px" onclick="color(this)"></div>
+            <div id="white" style="width: 9px; height: 9px; border: 1px solid black; margin: 10px" onclick="color(this)"></div>
+        </div>
+        <div style="display: flex; align-items: center">
+            <div>Change cursor size:</div>
+            <div id="increase" style="display: flex; align-items: center; width: 10px; height: 10px; border: 1px solid black; margin: 10px; box-sizing: border-box;" onclick="size(this)">+</div>
+            <div id="size">10</div>
+            <div id="decrease" style="display: flex; align-items: center; width: 10px; height: 10px; border: 1px solid black; margin: 10px; box-sizing: border-box;" onclick="size(this)">-</div>
+        </div>
+        <div>
+            <button onclick="send()">Send</button>
+        </div>
+        <div style="display: flex;">
+            <canvas id="can"></canvas>
+            <div style="position: relative">
+                <div id="mirror_original" style="position: absolute; background: url('https://portalvhdskzpngkvpz6x48.blob.core.windows.net/tangiblee-static-dev/shared/temp-images/item00001.jpeg'); background-size: cover;"></div>
+                <div id="mirror_filter" style="position: absolute; background-size: cover; mix-blend-mode: difference;"></div>
+            </div>
+        </div>
+    </body>
+</html>
