@@ -21,4 +21,5 @@ main {
 
 main canvas {
   border: 1px solid red;
+  opacity: 0.4;
 }

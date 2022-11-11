@@ -22,6 +22,44 @@ export const Workspace = props => {
         setMaskImageUrl(MOCK_MASK_URL);
     }, []);
 
+    const [old, setOld] = useState({x: 0, y: 0});
+    const [isPress, setIsPress] = useState(false);
+
+    const mouseDown = (e) => {
+        setIsPress(true);
+        // console.log(e)
+        setOld({x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY})
+    };
+
+    const mouseMove = e => {
+        if (isPress) {
+            var canvas = canvasRef.current;
+            var ctx = canvas.getContext('2d');
+            var x = e.nativeEvent.offsetX;
+            var y = e.nativeEvent.offsetY;
+
+            if (eraseMode) {
+                ctx.fillStyle = "transparent";
+                ctx.strokeStyle = "transparent";
+            } else {
+                ctx.fillStyle = "black";
+                ctx.strokeStyle = "black";
+            }
+            ctx.beginPath();
+            ctx.moveTo(old.x, old.y);
+            ctx.lineTo(x, y);
+            ctx.lineWidth = 20;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.fill();
+            setOld({x: x, y: y});
+        }
+    };
+
+    const mouseUp = e => {
+        setIsPress(false);
+    };
+
     useEffect(() => {
         if (!canvasRef.current) return;
 
@@ -39,38 +77,8 @@ export const Workspace = props => {
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
         };
-
-        var isPress = false;
-        var old = null;
-        canvas.addEventListener('mousedown', function (e){
-        isPress = true;
-        old = {x: e.offsetX, y: e.offsetY};
-        });
-        canvas.addEventListener('mousemove', function (e){
-        if (isPress) {
-            var x = e.offsetX;
-            var y = e.offsetY;
-            ctx.globalCompositeOperation = 'destination-out';
-
-            ctx.beginPath();
-            ctx.arc(x, y, 10, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.lineWidth = 20;
-            ctx.beginPath();
-            ctx.moveTo(old.x, old.y);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-
-            old = {x: x, y: y};
-
-        }
-        });
-
-        canvas.addEventListener('mouseup', function (e){
-        isPress = false;
-        });
     }, [canvasRef.current]);
+
 
     return (
         <main>
@@ -86,12 +94,6 @@ export const Workspace = props => {
             >
                 {eraseMode ? 'DRAW' : 'ERASE'}
             </button>
-            {/* <button
-            // TODO: functionality to do undo by CTRL + Z keydown
-                // onClick={() => canvasRef.current.undo()}
-            >
-                UNDO
-            </button> */}
             <button
                 onClick={() => setBrushSize(Math.min(brushSize + BRUSH_SIZE_STEP, MAX_BRUSH_SIZE))}
             >
@@ -112,29 +114,22 @@ export const Workspace = props => {
                 SEND IMAGE
             </button>
 
-            {/* <CanvasDraw
-                ref={canvasRef}
-                lazyRadius={0}
-                canvasWidth={600}
-                canvasHeight={600}
-                brushRadius={brushSize}
-                brushColor={eraseMode ? 'white' : 'black'}
-                hideGrid={true}
-                imgSrc={maskImageUrl}
-            /> */}
-            {/* <ReactSketchCanvas
-                // style={styles}
-                ref={canvasRef}
-                width={600}
-                height={600}
-                strokeWidth={brushSize}
-                eraserWidth={brushSize}
-                strokeColor="#000"
-            /> */}
-            <canvas
-                ref={canvasRef}
+            <div 
+                className="container"
+                style={{
+                    display: 'inline-block',
+                    backgroundImage: `url(${MOCK_RGB_URL}`,
+                    backgroundSize: 'cover',
+                }}
             >
-            </canvas>
+                <canvas
+                    ref={canvasRef}
+                    onMouseDown={mouseDown}
+                    onMouseMove={mouseMove}
+                    onMouseUp={mouseUp}
+                >
+                </canvas>
+            </div>
         </main>
     );
 };
