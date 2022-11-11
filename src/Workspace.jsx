@@ -20,8 +20,57 @@ export const Workspace = props => {
     useEffect(() => {
         setRgbImageUrl(MOCK_RGB_URL)
         setMaskImageUrl(MOCK_MASK_URL);
-        // canvasRef.current.
     }, []);
+
+    useEffect(() => {
+        if (!canvasRef.current) return;
+
+        var url = maskImageUrl;
+        var canvas = canvasRef.current;
+        var ctx = canvas.getContext('2d');
+        var img = new Image();
+        img.src = url;
+        img.crossOrigin="anonymous";
+        img.onload = function () {
+        var width = Math.min(500, img.width);
+        var height = img.height * (width / img.width);
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        };
+
+        var isPress = false;
+        var old = null;
+        canvas.addEventListener('mousedown', function (e){
+        isPress = true;
+        old = {x: e.offsetX, y: e.offsetY};
+        });
+        canvas.addEventListener('mousemove', function (e){
+        if (isPress) {
+            var x = e.offsetX;
+            var y = e.offsetY;
+            ctx.globalCompositeOperation = 'destination-out';
+
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.lineWidth = 20;
+            ctx.beginPath();
+            ctx.moveTo(old.x, old.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            old = {x: x, y: y};
+
+        }
+        });
+
+        canvas.addEventListener('mouseup', function (e){
+        isPress = false;
+        });
+    }, [canvasRef.current]);
 
     return (
         <main>
@@ -37,12 +86,12 @@ export const Workspace = props => {
             >
                 {eraseMode ? 'DRAW' : 'ERASE'}
             </button>
-            <button
+            {/* <button
             // TODO: functionality to do undo by CTRL + Z keydown
-                onClick={() => canvasRef.current.undo()}
+                // onClick={() => canvasRef.current.undo()}
             >
                 UNDO
-            </button>
+            </button> */}
             <button
                 onClick={() => setBrushSize(Math.min(brushSize + BRUSH_SIZE_STEP, MAX_BRUSH_SIZE))}
             >
@@ -55,14 +104,15 @@ export const Workspace = props => {
             </button>
             <button
                 onClick={() => {
-                    const t = canvasRef.current.getDataURL('png', maskImageUrl, 'red');
-                    console.log(t);
+                    const canvas = canvasRef.current;
+                    var dataURL = canvas.toDataURL();
+                    console.log(dataURL)
                 }}
             >
                 SEND IMAGE
             </button>
 
-            <CanvasDraw
+            {/* <CanvasDraw
                 ref={canvasRef}
                 lazyRadius={0}
                 canvasWidth={600}
@@ -71,7 +121,7 @@ export const Workspace = props => {
                 brushColor={eraseMode ? 'white' : 'black'}
                 hideGrid={true}
                 imgSrc={maskImageUrl}
-            />
+            /> */}
             {/* <ReactSketchCanvas
                 // style={styles}
                 ref={canvasRef}
@@ -81,6 +131,10 @@ export const Workspace = props => {
                 eraserWidth={brushSize}
                 strokeColor="#000"
             /> */}
+            <canvas
+                ref={canvasRef}
+            >
+            </canvas>
         </main>
     );
 };
