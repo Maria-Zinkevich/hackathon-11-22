@@ -19,10 +19,8 @@
         
         img.crossOrigin="anonymous";
         img.onload = function () {
-            // var width = Math.min(500, img.width);
-            var width = img.width;
-            // var height = img.height * (width / img.width);
-            var height = img.height;
+            var width = Math.min(500, img.width);
+            var height = img.height * (width / img.width);
             canvas.width = width;
             canvas.height = height;
             mirror_filter.style.width = width;
@@ -135,10 +133,8 @@
         
         img.crossOrigin="anonymous";
         img.onload = function () {
-            // var width = Math.min(500, img.width);
-            var width = img.width;
-            // var height = img.height * (width / img.width);
-            var height = img.height;
+            var width = Math.min(500, img.width);
+            var height = img.height * (width / img.width);
             canvasTemp.width = width;
             canvasTemp.height = height;
             
@@ -160,7 +156,7 @@
                     console.log(error)
                 });
         };
-        img.src = mirror_original.style.background.match(/[(].*[)]/)[0].split('"')[1];
+        img.src = mirror_original.style['background-image'].split('"')[1];
 
     }
 
@@ -172,7 +168,7 @@
                 init(reader.result.split('base64,')[1])
             }
             if (el.id === 'rgb_upload') {
-                mirror_original.style.background = `url(${reader.result})`;
+                mirror_original.style['background-image'] = `url(${reader.result})`;
             }
         }
         reader.readAsDataURL(file);
