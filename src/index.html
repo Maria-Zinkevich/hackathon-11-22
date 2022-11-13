@@ -21,6 +21,7 @@
         img.onload = function () {
             var width = Math.min(500, img.width);
             var height = img.height * (width / img.width);
+            document.querySelector('#editor').style.flexDirection = width > height ? 'column' : 'row';
             canvas.width = width;
             canvas.height = height;
             mirror_filter.style.width = width;
@@ -165,20 +166,31 @@
         var reader = new FileReader();
         reader.onloadend = function() {
             if (el.id === 'mask_upload') {
-                init(reader.result.split('base64,')[1])
+                init(reader.result.split('base64,')[1]);
+                document.querySelector('.mask .input-file-text').innerText = file.name;
             }
             if (el.id === 'rgb_upload') {
                 mirror_original.style['background-image'] = `url(${reader.result})`;
+                document.querySelector('.rgb .input-file-text').innerText = file.name;
             }
         }
         reader.readAsDataURL(file);
     }
     </script>
     <body>
-        <span>Mask</span>
-        <input id="mask_upload" type="file" accept="image/png, image/jpeg" oninput="upload(this)">
-        <span>RGB</span>
-        <input id="rgb_upload" type="file" accept="image/png, image/jpeg" oninput="upload(this)">
+        <form method="post" enctype="multipart/form-data" style="display: flex; justify-content: space-between; width: 500px;">
+            <label class="input-file mask">
+                   <span class="input-file-text" type="text"></span>
+                   <input id="mask_upload" type="file" name="file"  accept="image/png, image/jpeg" oninput="upload(this)">        
+                   <span class="input-file-btn">Choose mask</span>
+            </label>
+            <label class="input-file rgb">
+                <span class="input-file-text" type="text"></span>
+                <input id="rgb_upload" type="file" name="file" accept="image/png, image/jpeg" oninput="upload(this)">        
+                 <span class="input-file-btn">Choose image</span>
+            </label>
+        </form>
+       
         <div style="display: flex; justify-content: space-between; width: 500px; margin: 10px 0; color: #444; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" >
             <div style="display: flex; align-items: center">
                 <span>Color:</span>
@@ -190,9 +202,9 @@
                 <input type="range" value="10" min="1" max="50" oninput="resizeCap(this)">
                 <div id="size" style="width: 20px;">10</div>
             </div>
-            <button style="width: 80px; color: #fff; background-color: #2497E3; border: none; border-radius: 4px; cursor: pointer; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" onclick="send()">SEND</button>
+            <button style="width: 95px; height: 35px; color: #fff; background-color: #2497E3; border: none; border-radius: 4px; cursor: pointer; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" onclick="send()">SEND</button>
         </div>
-        <div style="display: flex;">
+        <div id="editor" style="display: flex; margin: 10px 0;">
             <div id="canvas_container"style="position: relative; overflow: hidden;">
                 <canvas id="can" style="cursor: none;"></canvas>
                 <div id="canvas_cursor" style="pointer-events: none; cursor:none; position: absolute; border: 1px solid black; border-radius: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; box-sizing: border-box; background-color: black;"></div>
@@ -301,6 +313,64 @@
             }
             input[type=range]:focus::-ms-fill-upper {
                 background: #2497E3;
+            }
+            .input-file {
+                position: relative;
+                display: inline-block;
+            }
+            .input-file-text {
+                padding: 0 10px;
+                line-height: 40px;
+                text-align: left;
+                height: 40px;
+                display: block;
+                float: left;
+                box-sizing: border-box;
+                width: 150px;
+                border-radius: 6px 0px 0 6px;
+                border: 1px solid #ddd;
+                color: #444;;
+                font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+            }
+            .input-file-btn {
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+                outline: none;
+                text-decoration: none;
+                font-size: 14px;
+                vertical-align: middle;
+                color: rgb(255 255 255);
+                text-align: center;
+                border-radius: 0 4px 4px 0;
+                background-color: #2497E3;
+                height: 40px;
+                width: 95px;
+                padding: 12px 0;
+                box-sizing: border-box;
+                border: none;
+                margin: 0;
+                font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+            }
+            .input-file input[type=file] {
+                position: absolute;
+                z-index: -1;
+                opacity: 0;
+                display: block;
+                width: 0;
+                height: 0;
+            }
+            .input-file input[type=file]:focus + .input-file-btn {
+                box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+            }
+            .input-file:hover .input-file-btn {
+                opacity: 0.9;
+            }
+            .input-file:active .input-file-btn {
+                opacity: 0.9;
+            }
+            .input-file input[type=file]:disabled + .input-file-btn {
+                background-color: #eee;
             }
         </style>
     </body>
