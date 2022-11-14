@@ -57,6 +57,7 @@
     
     function changeColor(obj, event) {
         stroke_color = obj.id;
+        canvas_cursor.style.border = stroke_color === 'black' ? '1px solid white' : '1px solid black';
         canvas_cursor.style['background-color'] = stroke_color;
 
         var activeItems = document.querySelectorAll(".active");
@@ -253,7 +254,7 @@
         <div id="editor" style="display: flex; margin: 10px 0;">
             <div id="canvas_container"style="position: relative; overflow: hidden;">
                 <canvas id="can" style="cursor: none;"></canvas>
-                <div id="canvas_cursor" style="pointer-events: none; cursor:none; position: absolute; border: 1px solid black; border-radius: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; box-sizing: border-box; background-color: black;"></div>
+                <div id="canvas_cursor" style="pointer-events: none; cursor:none; position: absolute; border: 1px solid white; border-radius: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; box-sizing: border-box; background-color: black;"></div>
             </div>
             <div id="mirror_container"style="position: relative">
                 <div id="mirror_original" style="position: absolute; background-size: cover;"></div>
