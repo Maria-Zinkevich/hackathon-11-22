@@ -21,11 +21,17 @@
         img.onload = function () {
             var width = Math.min(500, img.width);
             var height = img.height * (width / img.width);
-            document.querySelector('#editor').style.flexDirection = width > height ? 'column' : 'row';
+            if (width > height) {
+                editor.style.flexDirection = 'column';
+                editor.style.alignItems = 'center';
+            } else {
+                editor.style.flexDirection = 'row';
+                editor.style.justifyContent = 'center';
+            }
             canvas.width = width;
             canvas.height = height;
-            mirror_filter.style.width = width;
-            mirror_filter.style.height = height;
+            mirror_container.style.width = canvas.width;
+            mirror_container.style.height = canvas.height;
             mirror_original.style.width = width;
             mirror_original.style.height = height;
             
@@ -69,9 +75,23 @@
         size.innerText = stroke_size;
     }
 
-    function mirror() {
-        var dataURL = canvas.toDataURL();
-        mirror_filter.style.background = `url(${dataURL})`
+    function mirror() {        
+        var ctxTemp = mirror_canvas.getContext("2d");
+        mirror_canvas.width = canvas.width;
+        mirror_canvas.height = canvas.height;
+        ctxTemp.drawImage(canvas, 0, 0, mirror_canvas.width, mirror_canvas.height);
+
+        for(var i = 0; i <= mirror_canvas.width; i++) {
+            for(var j = 0; j <= mirror_canvas.height; j++) {
+                var pixelData = ctxTemp.getImageData(i, j, 1, 1);
+                pixelData.data[3] = 255 - pixelData.data[1];
+                pixelData.data[0] = 0;
+                pixelData.data[1] = 255;
+                pixelData.data[2] = 0;
+
+                ctxTemp.putImageData(pixelData, i, j);
+            }
+        }
     }
     
     function draw() {
@@ -84,7 +104,22 @@
         ctx.lineCap = 'round';
         ctx.stroke();
         ctx.fill();
-        mirror();
+        
+        var ctxTemp = mirror_canvas.getContext("2d");
+        var ctxTempColor = stroke_color;
+        if (stroke_color === 'black') ctxTempColor = 'rgba(0, 255, 0, 255)';
+        ctxTemp.globalCompositeOperation = stroke_color === 'white' ? 'destination-out' : 'source-over';
+
+        ctxTemp.fillStyle = ctxTempColor;
+        ctxTemp.strokeStyle = ctxTempColor;
+        ctxTemp.beginPath();
+        ctxTemp.moveTo(prevX, prevY);
+        ctxTemp.lineTo(currX, currY);
+        ctxTemp.lineWidth = stroke_size * 2;
+        ctxTemp.lineCap = 'round';
+        ctxTemp.stroke();
+        ctxTemp.fill();
+        // mirror();
     }
     
     function findxy(res, e) {
@@ -101,7 +136,16 @@
                 ctx.beginPath();
                 ctx.arc(currX, currY, stroke_size, 0, 2 * Math.PI);
                 ctx.fill();
-                mirror();
+
+                var ctxTemp = mirror_canvas.getContext("2d");
+                var ctxTempColor = stroke_color;
+                if (stroke_color === 'black') ctxTempColor = 'rgba(0, 255, 0, 255)';
+                ctxTemp.globalCompositeOperation = stroke_color === 'white' ? 'destination-out' : 'source-over';
+                ctxTemp.fillStyle = ctxTempColor;
+                ctxTemp.beginPath();
+                ctxTemp.arc(currX, currY, stroke_size, 0, 2 * Math.PI);
+                ctxTemp.fill();
+
                 dot_flag = false;
             }
         }
@@ -145,16 +189,18 @@
             let formData = new FormData();
             formData.append('image', rgbDataURL);
             formData.append('mask', dataURL);
-
+            spinner.style.display = 'block'
             fetch(apiUrl, { method: 'POST', cors:"no-cors", body: formData })
                 .then(response => {
                     return response.json()
                 })
                 .then(text => {
                     init(text.result_mask);
+                    spinner.style.display = 'none'
                 })
                 .catch(error => {
                     console.log(error)
+                    spinner.style.display = 'none'
                 });
         };
         img.src = mirror_original.style['background-image'].split('"')[1];
@@ -191,7 +237,7 @@
             </label>
         </form>
        
-        <div style="display: flex; justify-content: space-between; width: 500px; margin: 10px 0; color: #444; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" >
+        <div style="display: flex; justify-content: space-between; width: 500px; margin: 10px auto; color: #444; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" >
             <div style="display: flex; align-items: center">
                 <span>Color:</span>
                 <div id="black" class="color active" style="width: 14px; height: 14px; background-color: black; margin: 5px; border-radius: 15px; user-select: none;" onclick="changeColor(this,event)"></div>
@@ -211,11 +257,20 @@
             </div>
             <div id="mirror_container"style="position: relative">
                 <div id="mirror_original" style="position: absolute; background-size: cover;"></div>
-                <div id="mirror_filter" style="position: absolute; background-size: cover; filter: invert(1); opacity: 0.5"></div>
+                <canvas id="mirror_canvas" style="position: absolute;"></canvas>
                 <div id="mirror_cursor" style="pointer-events: none; cursor:none; position: absolute; border: 1px solid black; border-radius: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; box-sizing: border-box;"></div>
             </div>
         </div>
+        <div id="spinner" style="display: none">
+            <div  style="width: 100%; height: 100%; position: fixed; left: 0; top: 0; background-color: white; opacity: 0.5;"></div>
+            <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                <img width=300 height=300 src="https://cdn.tangiblee.com/widget/public/img/TNG_animated_logo.gif">
+            </div>
+        </div>
         <style>
+            body > * {
+                margin: auto;
+            }
             button:hover {
                 opacity: 0.9;
             }
