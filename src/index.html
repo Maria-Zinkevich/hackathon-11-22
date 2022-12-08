@@ -6,6 +6,9 @@
         prevY = 0,
         currY = 0,
         dot_flag = false;
+    
+    let originalBase64 = null;
+    let originalFileName = null;
 
     var stroke_color = "black",
         stroke_size = 10;
@@ -85,6 +88,7 @@
         for(var i = 0; i <= mirror_canvas.width; i++) {
             for(var j = 0; j <= mirror_canvas.height; j++) {
                 var pixelData = ctxTemp.getImageData(i, j, 1, 1);
+                // console.log(pixelData.data[0], pixelData.data[1], pixelData.data[2], pixelData.data[3])
                 pixelData.data[3] = 255 - pixelData.data[1];
                 pixelData.data[0] = 0;
                 pixelData.data[1] = 255;
@@ -208,34 +212,114 @@
 
     }
 
+    function splitRGBA(imageBase64) {
+        return new Promise((resolve, reject) => {
+            var img = new Image();
+            var tempCanvas = document.createElement('canvas');
+            // tempCanvas = document.getElementById('tempCanvas');
+            ctx = tempCanvas.getContext("2d");
+
+            img.onload = function () {
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                for(var i = 0; i <= tempCanvas.width; i++) {
+                    for(var j = 0; j <= tempCanvas.height; j++) {
+                        var pixelData = ctx.getImageData(i, j, 1, 1);
+                        if (pixelData.data[3] === 0) {
+                            pixelData.data[3] = 255;
+                            pixelData.data[0] = 0;
+                            pixelData.data[1] = 0;
+                            pixelData.data[2] = 0;
+                        } else {
+                            pixelData.data[3] = 255;
+                            pixelData.data[0] = 255;
+                            pixelData.data[1] = 255;
+                            pixelData.data[2] = 255;
+                        }
+                        ctx.putImageData(pixelData, i, j);
+                    }
+                }
+
+                resolve({
+                    mask: tempCanvas.toDataURL(),
+                    original: imageBase64
+                })
+            };
+            img.src = imageBase64;
+        })
+    };
+
+    function prepareOutputPng() {
+        return new Promise((resolve, reject) => {
+            var img = new Image();
+            var tempCanvas = document.createElement('canvas');
+            // tempCanvas = document.getElementById('tempCanvas');
+            ctx = tempCanvas.getContext("2d");
+
+            const maskCanvas = document.querySelector('#can');
+            const maskCtx = maskCanvas.getContext("2d");
+
+            img.onload = function () {
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;           
+                ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                for(var i = 0; i <= tempCanvas.width; i++) {
+                    for(var j = 0; j <= tempCanvas.height; j++) {
+                        var pixelDataOriginal = ctx.getImageData(i, j, 1, 1);
+                        const pixelDataMask = maskCtx.getImageData(i, j, 1, 1);
+                        pixelDataOriginal.data[3] = pixelDataMask.data[1];
+                        ctx.putImageData(pixelDataOriginal, i, j);
+                    }
+                }
+
+                resolve(tempCanvas.toDataURL());
+            };
+            img.src = originalBase64;
+        })
+    };
+
     function upload (el) {
         var file = el.files[0];
         var reader = new FileReader();
-        reader.onloadend = function() {
-            if (el.id === 'mask_upload') {
-                init(reader.result.split('base64,')[1]);
-                document.querySelector('.mask .input-file-text').innerText = file.name;
-            }
-            if (el.id === 'rgb_upload') {
-                mirror_original.style['background-image'] = `url(${reader.result})`;
-                document.querySelector('.rgb .input-file-text').innerText = file.name;
-            }
+        reader.onloadend = async function() {
+            const {mask, original} = await splitRGBA(reader.result);
+            init(mask.split('base64,')[1]);
+            mirror_original.style['background-image'] = `url(${original})`;
+            originalBase64 = original;
+            originalFileName = file.name;
         }
         reader.readAsDataURL(file);
     }
+
+    function downloadFile(dataurl, filename) {
+        const link = document.createElement('a');
+        link.href = dataurl;
+        link.download = filename;
+        link.click();
+    };
+    async function downloadRgba() {
+        if (!originalBase64 || !originalFileName) return;
+        const [fileName, _] = originalFileName.split('.png');
+        const data = await prepareOutputPng();
+        downloadFile(data, fileName + '_NN' + '.png');
+    }
+
     </script>
     <body>
         <form method="post" enctype="multipart/form-data" style="display: flex; justify-content: space-between; width: 500px;">
             <label class="input-file mask">
                    <span class="input-file-text" type="text"></span>
                    <input id="mask_upload" type="file" name="file"  accept="image/png, image/jpeg" oninput="upload(this)">        
-                   <span class="input-file-btn">Choose mask</span>
+                   <span class="input-file-btn">Upload PNG</span>
             </label>
-            <label class="input-file rgb">
+            <!-- <label class="input-file rgb">
                 <span class="input-file-text" type="text"></span>
                 <input id="rgb_upload" type="file" name="file" accept="image/png, image/jpeg" oninput="upload(this)">        
                  <span class="input-file-btn">Choose image</span>
-            </label>
+            </label> -->
+
+            <button onclick="downloadRgba()">DOWNLOAD</button>
         </form>
        
         <div style="display: flex; justify-content: space-between; width: 500px; margin: 10px auto; color: #444; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" >
@@ -249,9 +333,14 @@
                 <input type="range" value="10" min="1" max="50" oninput="resizeCap(this)">
                 <div id="size" style="width: 20px;">10</div>
             </div>
-            <button style="width: 95px; height: 35px; color: #fff; background-color: #2497E3; border: none; border-radius: 4px; cursor: pointer; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;" onclick="send()">SEND</button>
+            <button onclick="send()">SEND</button>
         </div>
         <div id="editor" style="display: flex; margin: 10px 0;">
+
+            <!-- <div id="canvas_container"style="position: relative; overflow: hidden;">
+                <canvas id="tempCanvas" style="cursor: none;"></canvas>
+            </div> -->
+
             <div id="canvas_container"style="position: relative; overflow: hidden;">
                 <canvas id="can" style="cursor: none;"></canvas>
                 <div id="canvas_cursor" style="pointer-events: none; cursor:none; position: absolute; border: 1px solid white; border-radius: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; box-sizing: border-box; background-color: black;"></div>
@@ -271,6 +360,16 @@
         <style>
             body > * {
                 margin: auto;
+            }
+            button {
+                width: 95px; 
+                height: 35px; 
+                color: #fff; 
+                background-color: #2497E3; 
+                border: none; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
             }
             button:hover {
                 opacity: 0.9;
